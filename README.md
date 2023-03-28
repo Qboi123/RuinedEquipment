@@ -1,4 +1,7 @@
-# Ruined Equipment
+### THIS MOD IS A PORT OF [Pepperoni-Jabroni/RuinedEquipment](https://github.com/Pepperoni-Jabroni/RuinedEquipment) MADE FOR PERSONAL USE
+### THE PORT WILL NEVER BE RELEASED ON CURSEFORGE OR MODRINTH
+
+# Ruined Equipment `PRIVATE FORGE PORT`
 
   <a href="https://www.curseforge.com/minecraft/mc-mods/fabric-api"><img src="https://i.imgur.com/Ol1Tcf8.png" width="149" height="50" title="Fabric API" alt="Fabric API"></a>
 

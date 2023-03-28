@@ -1,0 +1,41 @@
+modLoader = "javafml"
+loaderVersion = "[40,)"
+license = "GPL-3.0"
+
+# The main mod, and all sub-mods.
+[[mods]]
+modId = "ruined_equipment"
+version = "${version}"
+displayName = "Ruined Equipment"
+#updateJSONURL="http://myurl.me/"
+displayURL = "https://github.com/Qboi123/RuinedEquipment"
+logoFile="ruined_equipment.png"
+credits = "Thanks to Pepperoni__Jabroni__ for the original Fabric mod."
+authors = "Qboi123, Pepperoni__Jabroni__"
+description = """
+NOTE: THIS IS AN UNOFFICIAL PORT THAT IS USED FOR QBOI'S SMP.
+May you never forget your fallen tools and armors.
+"""
+itemIcon = "ruined_equipment:red_laptop"
+
+# Dependencies for the main mod.
+[[dependencies.ruined_equipment]]
+modId = "forge"
+mandatory = true
+versionRange = "[40,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ruined_equipment]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.18.2,1.19)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ruined_equipment]]
+modId = "cloth_config"
+mandatory = true
+versionRange = "[6.2,7)"
+ordering = "NONE"
+side = "BOTH"

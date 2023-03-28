@@ -1,7 +1,5 @@
 package pepjebs.ruined_equipment.item;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
@@ -12,8 +10,10 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
 import pepjebs.ruined_equipment.recipe.RuinedEquipmentSmithingEmpowerRecipe;
@@ -33,7 +33,7 @@ public class RuinedEquipmentItem extends Item {
         return "item.ruined_equipment.ruined_prefix";
     }
 
-    @Environment(EnvType.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
         super.appendTooltip(stack, world, tooltip, context);
@@ -61,7 +61,7 @@ public class RuinedEquipmentItem extends Item {
             tooltip.add(new TranslatableText("item.ruined_equipment.ruined_upgrading")
                     .formatted(Formatting.GRAY));
         }
-        if (this == Registry.ITEM.get(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_shield"))
+        if (this == ForgeRegistries.ITEMS.getValue(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_shield"))
                 && stack.getNbt().contains("BlockEntityTag")) {
             tooltip.add(new TranslatableText("item.ruined_equipment.ruined_shield.banner")
                     .formatted(Formatting.GRAY)
@@ -70,7 +70,7 @@ public class RuinedEquipmentItem extends Item {
     }
 
     @Override
-    @Environment(EnvType.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public Text getName() {
         // Get existing text
         MutableText supered = super.getName().shallowCopy();
@@ -81,7 +81,7 @@ public class RuinedEquipmentItem extends Item {
     }
 
     @Override
-    @Environment(EnvType.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public Text getName(ItemStack stack) {
         // Get existing text
         MutableText supered = super.getName().shallowCopy();

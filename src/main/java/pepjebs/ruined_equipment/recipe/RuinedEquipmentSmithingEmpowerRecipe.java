@@ -11,8 +11,9 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.SmithingRecipe;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.ForgeRegistryEntry;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
 import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
 import pepjebs.ruined_equipment.utils.RuinedEquipmentUtils;
@@ -27,7 +28,7 @@ public class RuinedEquipmentSmithingEmpowerRecipe extends SmithingRecipe {
     public RuinedEquipmentSmithingEmpowerRecipe(Identifier id) {
         super(
                 id,
-                Ingredient.ofItems(Registry.ITEM.get(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_bow"))),
+                Ingredient.ofItems(ForgeRegistries.ITEMS.getValue(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_bow"))),
                 Ingredient.ofItems(Items.NETHERITE_SCRAP),
                 ItemStack.EMPTY
         );
@@ -78,7 +79,7 @@ public class RuinedEquipmentSmithingEmpowerRecipe extends SmithingRecipe {
         return width * height >= 2;
     }
 
-    public static class Serializer implements RecipeSerializer<RuinedEquipmentSmithingEmpowerRecipe> {
+    public static class Serializer extends ForgeRegistryEntry<RecipeSerializer<?>> implements RecipeSerializer<RuinedEquipmentSmithingEmpowerRecipe> {
 
         @Override
         public RuinedEquipmentSmithingEmpowerRecipe read(Identifier id, JsonObject json) {
