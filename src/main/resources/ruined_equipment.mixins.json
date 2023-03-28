@@ -2,6 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "pepjebs.ruined_equipment.mixin",
+  "refmap": "ruined_equipment-refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "LivingEntityMixin",

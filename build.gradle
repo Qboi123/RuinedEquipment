@@ -22,6 +22,9 @@ loom {
 			mod mod_id
 		}
 	}
+	mixin {
+		defaultRefmapName.set("ruined_equipment-refmap.json")
+	}
 }
 
 repositories {
