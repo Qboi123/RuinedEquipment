@@ -16,7 +16,7 @@ group = project.maven_group
 
 loom {
 	forge {
-		mixinConfig "$projectDir/src/main/resources/ruined_equipment.mixins.json"
+		mixinConfig "ruined_equipment.mixins.json"
 
 		dataGen {
 			mod mod_id
@@ -124,8 +124,7 @@ jar {
 				"Implementation-Title"    : project.name,
 				"Implementation-Version"  : version,
 				"Implementation-Vendor"   : project.mod_author,
-				"Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-				"Mixin-Configs"           : "ruined_equipment.mixins.json"
+				"Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 		])
 	}
 }
