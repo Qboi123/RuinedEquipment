@@ -9,16 +9,21 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
-import net.minecraft.util.registry.Registry;
+import net.minecraftforge.registries.ForgeRegistries;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
+import pepjebs.ruined_equipment.item.RuinedAshesItem;
+import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
 import pepjebs.ruined_equipment.item.RuinedEquipmentItems;
 import pepjebs.ruined_equipment.recipe.RuinedEquipmentSmithingEmpowerRecipe;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+@SuppressWarnings("DataFlowIssue")
 public class RuinedEquipmentUtils {
 
     public static String RUINED_ENCHTS_TAG = "RuinedEnchantments";
+    public static String RUINED_ITEM_KEY_TAG = "ItemKey";
 
     public static boolean ruinedItemHasEnchantment(ItemStack ruinedItem, Enchantment enchantment) {
         if (ruinedItem.getNbt() == null) return false;
@@ -31,11 +36,15 @@ public class RuinedEquipmentUtils {
         return false;
     }
 
+    public static boolean isRuinedItem(Item item) {
+        return item instanceof RuinedEquipmentItem || item instanceof RuinedAshesItem;
+    }
+
     public static Item getEmpowermentApplicationItem() {
         if (RuinedEquipmentMod.CONFIG != null) {
             try {
                 String[] itemId = RuinedEquipmentMod.CONFIG.empowermentSmithingItem.split(":");
-                return Registry.ITEM.get(new Identifier(itemId[0], itemId[1]));
+                return ForgeRegistries.ITEMS.getValue(new Identifier(itemId[0], itemId[1]));
             } catch (Exception e) {
                 RuinedEquipmentMod.LOGGER.warn(e.getMessage());
             }
@@ -44,7 +53,7 @@ public class RuinedEquipmentUtils {
     }
 
     public static int compareItemsById(Item i1, Item i2) {
-        return Registry.ITEM.getId(i1).compareTo(Registry.ITEM.getId(i2));
+        return ForgeRegistries.ITEMS.getKey(i1).compareTo(ForgeRegistries.ITEMS.getKey(i2));
     }
 
     public static int generateRepairLevelCost(ItemStack repaired, int maxLevel) {
@@ -52,10 +61,20 @@ public class RuinedEquipmentUtils {
         return Math.max(targetLevel, 1);
     }
 
+    public static Item getRepairItemForItemStack(ItemStack stack) {
+        Item vanillaItem = RuinedEquipmentItems.getVanillaItemMap().get(stack.getItem());
+        if (vanillaItem == null) {
+            Identifier modItemId = RuinedEquipmentUtils.getItemKeyIdFromItemStack(stack);
+            vanillaItem = ForgeRegistries.ITEMS.getValue(modItemId);
+        }
+        return vanillaItem;
+    }
+
     public static ItemStack generateRepairedItemForAnvilByFraction(
             ItemStack leftStack,
             double damageFraction) {
-        int maxDamage = new ItemStack(RuinedEquipmentItems.getVanillaItemMap().get(leftStack.getItem())).getMaxDamage();
+        Item vanillaItem = getRepairItemForItemStack(leftStack);
+        int maxDamage = new ItemStack(vanillaItem).getMaxDamage();
         return generateRepairedItemForAnvilByDamage(leftStack, (int) (damageFraction * (double) maxDamage));
     }
 
@@ -66,7 +85,8 @@ public class RuinedEquipmentUtils {
                 leftStack.getNbt().contains(RuinedEquipmentSmithingEmpowerRecipe.RUINED_MAX_ENCHT_TAG)
                 && leftStack.getNbt().getBoolean(RuinedEquipmentSmithingEmpowerRecipe.RUINED_MAX_ENCHT_TAG);
 
-        ItemStack repaired = new ItemStack(RuinedEquipmentItems.getVanillaItemMap().get(leftStack.getItem()));
+        Item vanillaItem = getRepairItemForItemStack(leftStack);
+        ItemStack repaired = new ItemStack(vanillaItem);
         NbtCompound tag = leftStack.getOrCreateNbt();
         String encodedEnch = tag.getString(RUINED_ENCHTS_TAG);
         if (!encodedEnch.isEmpty()) tag.remove(RUINED_ENCHTS_TAG);
@@ -92,9 +112,22 @@ public class RuinedEquipmentUtils {
             String[] enchantItem = encodedEnchant.split(">");
             String[] enchantKey = enchantItem[0].split(":");
             int enchantLevel = Integer.parseInt(enchantItem[1]);
-            enchants.put(Registry.ENCHANTMENT.get(new Identifier(enchantKey[0], enchantKey[1])), enchantLevel);
+            enchants.put(ForgeRegistries.ENCHANTMENTS.getValue(new Identifier(enchantKey[0], enchantKey[1])), enchantLevel);
         }
         return enchants.isEmpty() ? null : enchants;
+    }
+
+    public static List<Identifier> getParsedBlocklistForRuinedAshesItems() {
+        if (RuinedEquipmentMod.CONFIG == null || RuinedEquipmentMod.CONFIG.blocklistForRuinedAshesItems == null
+                || RuinedEquipmentMod.CONFIG.blocklistForRuinedAshesItems.isEmpty())
+            return new ArrayList<>();
+        return Arrays.stream(RuinedEquipmentMod.CONFIG.blocklistForRuinedAshesItems
+                .split(";"))
+                .map(p -> {
+                    String[] idParts = p.split(":");
+                    return new Identifier(idParts[0], idParts[1]);
+                })
+                .toList();
     }
 
     public static void onSendEquipmentBreakStatusImpl(
@@ -103,36 +136,77 @@ public class RuinedEquipmentUtils {
             boolean forceSet) {
         for (Map.Entry<Item, Item> itemMap : RuinedEquipmentItems.getVanillaItemMap().entrySet()) {
             if (isVanillaItemStackBreaking(breakingStack, itemMap.getValue())) {
-                // Directly copy over breaking Item's NBT, removing specific fields
                 ItemStack ruinedStack = new ItemStack(itemMap.getKey());
-                NbtCompound breakingNBT = breakingStack.getOrCreateNbt();
-                if (breakingNBT.contains("Damage")) breakingNBT.remove("Damage");
-                if (breakingNBT.contains("RepairCost")) breakingNBT.remove("RepairCost");
-                // Set enchantment NBT data
-                NbtCompound enchantTag = getNbtForEnchantments(breakingStack, ruinedStack);
-                if (enchantTag != null) breakingNBT.copyFrom(enchantTag);
-                if (breakingNBT.contains("Enchantments")) breakingNBT.remove("Enchantments");
-                ruinedStack.setNbt(breakingNBT);
-                // Force set will place the Ruined item in hand
-                if (forceSet) {
-                    int idx = 0;
-                    if (serverPlayer.getInventory().offHand.get(0).toString().compareTo(breakingStack.toString()) != 0)
-                        idx = serverPlayer.getInventory().selectedSlot + 1;
-                    RuinedEquipmentMod.ruinedEquipmentSetter.put(
-                            serverPlayer.getName().getString(),
-                            new Pair<>(idx, ruinedStack));
-                    RuinedEquipmentMod.LOGGER.info("ruinedEquipmentSetter.put: " + serverPlayer.getName().getString());
-                } else {
-                    serverPlayer.getInventory().offerOrDrop(ruinedStack);
-                }
+                processBreakingEquipment(serverPlayer, breakingStack, forceSet, ruinedStack);
+                return;
             }
         }
+        if (RuinedEquipmentMod.CONFIG.enableRuinedItemsAshesGeneration) {
+            ItemStack ruinedStack = new ItemStack(RuinedEquipmentMod.RUINED_ASHES_ITEM);
+            if (getParsedBlocklistForRuinedAshesItems().stream()
+                    .anyMatch(i -> i.compareTo(ForgeRegistries.ITEMS.getKey(breakingStack.getItem())) == 0))
+                return;
+            processBreakingEquipment(serverPlayer, breakingStack, forceSet, ruinedStack);
+        }
+    }
+
+    private static void processBreakingEquipment(
+            ServerPlayerEntity serverPlayer,
+            ItemStack breakingStack,
+            boolean forceSet,
+            ItemStack ruinedStack
+            ) {
+        NbtCompound breakingNBT = breakingStack.getOrCreateNbt();
+        if (breakingNBT.contains("Damage")) breakingNBT.remove("Damage");
+        if (breakingNBT.contains("RepairCost")) breakingNBT.remove("RepairCost");
+        // Set enchantment NBT data
+        NbtCompound enchantTag = getNbtForEnchantments(breakingStack, ruinedStack);
+        if (enchantTag != null) breakingNBT.copyFrom(enchantTag);
+        if (breakingNBT.contains("Enchantments")) breakingNBT.remove("Enchantments");
+        if (ruinedStack.getItem() == RuinedEquipmentMod.RUINED_ASHES_ITEM) {
+            Identifier breakingId = ForgeRegistries.ITEMS.getKey(breakingStack.getItem());
+            assert breakingId != null;
+            breakingNBT.putString(RUINED_ITEM_KEY_TAG, breakingId.toString());
+        }
+        ruinedStack.setNbt(breakingNBT);
+        // Force set will place the Ruined item in hand
+        if (forceSet) {
+            int idx = 0;
+            if (serverPlayer.getInventory().offHand.get(0).toString().compareTo(breakingStack.toString()) != 0)
+                idx = serverPlayer.getInventory().selectedSlot + 1;
+            RuinedEquipmentMod.ruinedEquipmentSetter.put(
+                    serverPlayer.getName().getString(),
+                    new Pair<>(idx, ruinedStack));
+        } else {
+            serverPlayer.getInventory().offerOrDrop(ruinedStack);
+        }
+    }
+
+    public static Identifier getItemKeyIdFromItemStack(ItemStack ruinedItemAshes) {
+        assert ruinedItemAshes.getItem() == RuinedEquipmentMod.RUINED_ASHES_ITEM;
+        if (ruinedItemAshes.getNbt() == null || !ruinedItemAshes.getNbt().contains(RUINED_ITEM_KEY_TAG)) return null;
+        return new Identifier(ruinedItemAshes.getNbt().getString(RUINED_ITEM_KEY_TAG));
+
+    }
+
+    public static Map<Identifier, Identifier> getParsedRuinedItemsAshesRepairItems() {
+        if (RuinedEquipmentMod.CONFIG.ruinedItemsAshesRepairItems == null) return null;
+        String ruinedItemsAshesRepairStr = RuinedEquipmentMod.CONFIG.ruinedItemsAshesRepairItems;
+        return Arrays.stream(ruinedItemsAshesRepairStr.split(";"))
+                .map(s -> {
+                    String[] modItem = s.split("/")[0].split(":");
+                    String[] modRepair = s.split("/")[1].split(":");
+                    Identifier modItemId = new Identifier(modItem[0], modItem[1]);
+                    Identifier modRepairId = new Identifier(modRepair[0], modRepair[1]);
+                    return new Pair<>(modItemId, modRepairId);
+                })
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
     public static NbtCompound getNbtForEnchantments(ItemStack breakingStack, ItemStack ruinedStack) {
         Set<String> enchantmentStrings = new HashSet<>();
         for (Map.Entry<Enchantment, Integer> ench : EnchantmentHelper.get(breakingStack).entrySet()) {
-            String enchantString = Registry.ENCHANTMENT.getId(ench.getKey())+">"+ench.getValue();
+            String enchantString = ForgeRegistries.ENCHANTMENTS.getKey(ench.getKey())+">"+ench.getValue();
             enchantmentStrings.add(enchantString);
         }
         if (!enchantmentStrings.isEmpty()) {

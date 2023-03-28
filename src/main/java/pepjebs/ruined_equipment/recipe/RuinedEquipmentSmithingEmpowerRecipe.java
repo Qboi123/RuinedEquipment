@@ -15,7 +15,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.ForgeRegistryEntry;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
-import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
 import pepjebs.ruined_equipment.utils.RuinedEquipmentUtils;
 
 import java.util.ArrayList;
@@ -36,6 +35,8 @@ public class RuinedEquipmentSmithingEmpowerRecipe extends SmithingRecipe {
 
     @Override
     public boolean matches(Inventory inv, World world) {
+        if (RuinedEquipmentMod.CONFIG != null && !RuinedEquipmentMod.CONFIG.enableSmithingRuinedEmpowered)
+            return false;
         Item empowermentItem = RuinedEquipmentUtils.getEmpowermentApplicationItem();
         ArrayList<ItemStack> craftingStacks = new ArrayList<>();
         for(int i = 0; i < inv.size(); i++) {
@@ -51,9 +52,7 @@ public class RuinedEquipmentSmithingEmpowerRecipe extends SmithingRecipe {
                 otherStack = craftingStacks.get(0).copy();
             }
             if (otherStack == ItemStack.EMPTY) return false;
-            return !(!(otherStack.getItem() instanceof RuinedEquipmentItem) || (otherStack.getNbt() != null
-                    && otherStack.getNbt().contains(RUINED_MAX_ENCHT_TAG)
-                    && otherStack.getNbt().getBoolean(RUINED_MAX_ENCHT_TAG)));
+            return RuinedEquipmentUtils.isRuinedItem(otherStack.getItem());
         }
         return false;
     }
@@ -62,7 +61,7 @@ public class RuinedEquipmentSmithingEmpowerRecipe extends SmithingRecipe {
     public ItemStack craft(Inventory inv) {
         ItemStack ruinedItem = ItemStack.EMPTY;
         for(int i = 0; i < inv.size(); i++) {
-            if (inv.getStack(i).getItem() instanceof RuinedEquipmentItem) {
+            if (RuinedEquipmentUtils.isRuinedItem(inv.getStack(i).getItem())) {
                 ruinedItem = inv.getStack(i).copy();
             }
         }

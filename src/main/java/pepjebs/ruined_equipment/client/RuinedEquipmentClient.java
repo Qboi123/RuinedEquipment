@@ -21,12 +21,11 @@ public class RuinedEquipmentClient {
         for (Map.Entry<Item, Item> i : RuinedEquipmentItems.getVanillaDyeableItemMap().entrySet()) {
             event.getItemColors().register((stack, tintIndex) -> {
                 if (tintIndex == 0) {
-                    return ((DyeableItem) stack.getItem()).getColor(stack);
+                    return ((DyeableItem)stack.getItem()).getColor(stack);
                 } else {
                     return -1;
                 }
             }, i.getKey());
-
         }
     }
 }

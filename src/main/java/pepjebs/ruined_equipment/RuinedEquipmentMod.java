@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import pepjebs.ruined_equipment.client.RuinedEquipmentClient;
 import pepjebs.ruined_equipment.config.RuinedEquipmentConfig;
+import pepjebs.ruined_equipment.item.RuinedAshesItem;
 import pepjebs.ruined_equipment.item.RuinedDyeableEquipmentItem;
 import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
 import pepjebs.ruined_equipment.item.RuinedEquipmentItems;
@@ -47,6 +48,7 @@ public class RuinedEquipmentMod {
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public static final String RUINED_PREFIX = "ruined_";
+    public static RuinedAshesItem RUINED_ASHES_ITEM = null;
 
     public static RuinedEquipmentConfig CONFIG = null;
 
@@ -54,13 +56,10 @@ public class RuinedEquipmentMod {
     public static RuinedEquipmentSmithingEmpowerRecipe.Serializer RUINED_SMITH_SET_EMPOWER;
 
     public static final HashMap<String, Pair<Integer, ItemStack>> ruinedEquipmentSetter = new HashMap<>();
+
     private ItemGroup itemGroup;
 
     public RuinedEquipmentMod() {
-        init();
-    }
-
-    public void init() {
         FMLJavaModLoadingContext context = FMLJavaModLoadingContext.get();
         IEventBus modEventBus = context.getModEventBus();
         IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
@@ -70,67 +69,27 @@ public class RuinedEquipmentMod {
             client.init(context);
         });
 
-        AutoConfig.register(RuinedEquipmentConfig.class, JanksonConfigSerializer::new);
+        registerConfig();
 
-        RuinedEquipmentConfig config = AutoConfig.getConfigHolder(RuinedEquipmentConfig.class).getConfig();
-        CONFIG = config;
-        if (config.enableCraftingGridRuinedRepair) {
-            modEventBus.addGenericListener(RecipeSerializer.class, EventPriority.LOW, this::registerRepairRecipe);
-        }
-        if (config.enableSmithingRuinedEmpowered) {
-            modEventBus.addGenericListener(RecipeSerializer.class, EventPriority.LOW, this::registerSetEmpowerRecipe);
-        }
+        modEventBus.addGenericListener(RecipeSerializer.class, EventPriority.LOW, this::registerRepairRecipe);
+        modEventBus.addGenericListener(RecipeSerializer.class, EventPriority.LOW, this::registerSetEmpowerRecipe);
+
+        modEventBus.addGenericListener(Item.class, EventPriority.LOW, true, this::registerItems);
+
+        registerItemGroup(CONFIG);
 
         ModLoadingContext.get().registerExtensionPoint(ConfigGuiHandler.ConfigGuiFactory.class, () -> new ConfigGuiHandler.ConfigGuiFactory((minecraftClient, parent) -> {
             Supplier<Screen> configScreen = AutoConfig.getConfigScreen(RuinedEquipmentConfig.class, parent);
             return configScreen.get();
         }));
 
-        itemGroup = ItemGroup.MISC;
-        if (config.enableCreativeInventoryTab) {
-            itemGroup = new ItemGroup(MOD_ID + ".ruined_items") {
-                @Override
-                public ItemStack createIcon() {
-                    return new ItemStack(ForgeRegistries.ITEMS.getValue(new Identifier(MOD_ID, "ruined_diamond_pickaxe")));
-                }
-
-                @Override
-                public void appendStacks(DefaultedList<ItemStack> stacks) {
-                    for (Item item : RuinedEquipmentItems.getVanillaItemMap().keySet().stream()
-                            .sorted(RuinedEquipmentUtils::compareItemsById).toList()) {
-                        stacks.add(new ItemStack(item));
-                    }
-                }
-            };
-        }
-
-        modEventBus.addGenericListener(Item.class, EventPriority.LOW, true, this::onRegisterItems);
         forgeEventBus.addListener(this::onPlayerTick);
     }
 
-    private void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        PlayerEntity player = event.player;
-        String key = player.getName().getString();
-        if (ruinedEquipmentSetter.containsKey(key)) {
-            RuinedEquipmentMod.LOGGER.info("ServerTickEvents.START_SERVER_TICK: " + key);
-            Pair<Integer, ItemStack> entry = ruinedEquipmentSetter.get(key);
-            int slot = entry.getLeft();
-            ItemStack ruinedItem = entry.getRight();
-            boolean didRemove = false;
-            if (slot == 0) {
-                if (player.getInventory().offHand.get(slot).isEmpty()){
-                    player.getInventory().offHand.set(slot, ruinedItem);
-                    didRemove = true;
-                }
-            } else {
-                slot--;
-                if (player.getInventory().main.get(slot).isEmpty()) {
-                    player.getInventory().main.set(slot, ruinedItem);
-                    didRemove = true;
-                }
-            }
-            if (didRemove) ruinedEquipmentSetter.remove(key);
-        }
+    public void registerConfig() {
+        AutoConfig.register(RuinedEquipmentConfig.class, JanksonConfigSerializer::new);
+
+        CONFIG = AutoConfig.getConfigHolder(RuinedEquipmentConfig.class).getConfig();
     }
 
     private void registerRepairRecipe(RegistryEvent.Register<RecipeSerializer<?>> event) {
@@ -147,13 +106,12 @@ public class RuinedEquipmentMod {
         event.getRegistry().register(serializer);
     }
 
-    private void onRegisterItems(RegistryEvent.Register<Item> event) {
-        registerItems(itemGroup, event.getRegistry());
-    }
+    private void registerItems(RegistryEvent.Register<Item> event) {
+        this.itemGroup = ItemGroup.MISC;
+        ItemGroup itemGroup = this.itemGroup;
+        IForgeRegistry<Item> registry = event.getRegistry();
 
-    private static void registerItems(ItemGroup itemGroup, IForgeRegistry<Item> registry) {
         Map<Item, Item> vanillaItemMap = new HashMap<>();
-
         Item.Settings set = new Item.Settings().maxCount(1).group(itemGroup);
         for (Item i : RuinedEquipmentItems.SUPPORTED_VANILLA_ITEMS) {
             Identifier key = ForgeRegistries.ITEMS.getKey(i);
@@ -173,6 +131,56 @@ public class RuinedEquipmentMod {
             String vanillaItemIdPath = key.getPath();
             item.getKey().setRegistryName(new Identifier(MOD_ID, RUINED_PREFIX + vanillaItemIdPath));
             registry.register(item.getKey());
+        }
+
+        RuinedAshesItem ruinedAshesItem = new RuinedAshesItem(new Item.Settings().maxCount(1).group(itemGroup));
+        ruinedAshesItem.setRegistryName(new Identifier(MOD_ID, "ruined_item_ashes"));
+        RUINED_ASHES_ITEM = ruinedAshesItem;
+        registry.register(ruinedAshesItem);
+    }
+
+    private void registerItemGroup(RuinedEquipmentConfig config) {
+        if (config.enableCreativeInventoryTab) {
+            itemGroup = new ItemGroup(MOD_ID + ".ruined_items") {
+                @Override
+                public ItemStack createIcon() {
+                    return new ItemStack(ForgeRegistries.ITEMS.getValue(new Identifier(MOD_ID, "ruined_diamond_pickaxe")));
+                }
+
+                @Override
+                public void appendStacks(DefaultedList<ItemStack> stacks) {
+                    for (Item item : RuinedEquipmentItems.getVanillaItemMap().keySet().stream()
+                            .sorted(RuinedEquipmentUtils::compareItemsById).toList()) {
+                        stacks.add(new ItemStack(item));
+                    }
+                    stacks.add(new ItemStack(RUINED_ASHES_ITEM));
+                }
+            };
+        }
+    }
+
+    private void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        PlayerEntity player = event.player;
+
+        String key = player.getName().getString();
+        if (ruinedEquipmentSetter.containsKey(key)) {
+            Pair<Integer, ItemStack> entry = ruinedEquipmentSetter.get(key);
+            int slot = entry.getLeft();
+            ItemStack ruinedItem = entry.getRight();
+            boolean didRemove = false;
+            if (slot == 0) {
+                if (player.getInventory().offHand.get(slot).isEmpty()){
+                    player.getInventory().offHand.set(slot, ruinedItem);
+                    didRemove = true;
+                }
+            } else {
+                slot--;
+                if (player.getInventory().main.get(slot).isEmpty()) {
+                    player.getInventory().main.set(slot, ruinedItem);
+                    didRemove = true;
+                }
+            }
+            if (didRemove) ruinedEquipmentSetter.remove(key);
         }
     }
 }

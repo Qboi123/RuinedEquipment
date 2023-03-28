@@ -6,6 +6,8 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.screen.*;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.Identifier;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -15,11 +17,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
-import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
-import pepjebs.ruined_equipment.item.RuinedEquipmentItems;
-import pepjebs.ruined_equipment.recipe.RuinedEquipmentSmithingEmpowerRecipe;
 import pepjebs.ruined_equipment.utils.RuinedEquipmentUtils;
 
+@SuppressWarnings("DataFlowIssue")
 @Mixin(AnvilScreenHandler.class)
 public abstract class AnvilScreenHandlerMixin extends ForgingScreenHandler {
 
@@ -48,15 +48,20 @@ public abstract class AnvilScreenHandlerMixin extends ForgingScreenHandler {
     private void updateRuinedRepair(CallbackInfo ci) {
         ItemStack leftStack = this.input.getStack(0).copy();
         ItemStack rightStack = this.input.getStack(1).copy();
-        if (leftStack.getItem() instanceof RuinedEquipmentItem) {
+        if (RuinedEquipmentUtils.isRuinedItem(leftStack.getItem())) {
             if (RuinedEquipmentMod.CONFIG != null &&
                     !RuinedEquipmentMod.CONFIG.enableAnvilRuinedRepair) return;
-            RuinedEquipmentItem ruinedItem = (RuinedEquipmentItem) leftStack.getItem();
-            Item vanillaItem = RuinedEquipmentItems.getVanillaItemMap().get(ruinedItem);
-            int vanillaMaxDamage = vanillaItem.getMaxDamage() - 1;
+            Item vanillaItem = RuinedEquipmentUtils.getRepairItemForItemStack(leftStack);
+            Identifier vanillaItemId = ForgeRegistries.ITEMS.getKey(vanillaItem);
+            int vanillaMaxDamage = vanillaItem.getMaxDamage(leftStack) - 1;
             // Check right stack for matching repair item
             Ingredient repairIngredient = null;
-            if(vanillaItem instanceof ArmorItem) {
+            var ashesRepairItems = RuinedEquipmentUtils.getParsedRuinedItemsAshesRepairItems();
+            if (vanillaItemId.getNamespace().compareTo("minecraft") != 0 && ashesRepairItems != null) {
+                Identifier repairingItemId = ashesRepairItems.get(vanillaItemId);
+                if (repairingItemId == null) return;
+                repairIngredient = Ingredient.ofItems(ForgeRegistries.ITEMS.getValue(repairingItemId));
+            } else if(vanillaItem instanceof ArmorItem) {
                 repairIngredient = ((ArmorItem) vanillaItem).getMaterial().getRepairIngredient();
             } else if (vanillaItem instanceof ToolItem) {
                 repairIngredient = ((ToolItem) vanillaItem).getMaterial().getRepairIngredient();

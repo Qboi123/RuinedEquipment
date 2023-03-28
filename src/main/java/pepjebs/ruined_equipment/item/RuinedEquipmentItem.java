@@ -10,6 +10,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Rarity;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -37,7 +38,12 @@ public class RuinedEquipmentItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
         super.appendTooltip(stack, world, tooltip, context);
+        appendRuinedTooltip(stack, tooltip);
+    }
 
+    public static void appendRuinedTooltip(
+            ItemStack stack,
+            List<Text> tooltip) {
         if (stack.getNbt() == null) return;
         String tagString = stack.getNbt().getString(RuinedEquipmentUtils.RUINED_ENCHTS_TAG);
         Map<Enchantment, Integer> enchantMap = RuinedEquipmentUtils.processEncodedEnchantments(tagString);
@@ -61,7 +67,7 @@ public class RuinedEquipmentItem extends Item {
             tooltip.add(new TranslatableText("item.ruined_equipment.ruined_upgrading")
                     .formatted(Formatting.GRAY));
         }
-        if (this == ForgeRegistries.ITEMS.getValue(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_shield"))
+        if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_shield"))
                 && stack.getNbt().contains("BlockEntityTag")) {
             tooltip.add(new TranslatableText("item.ruined_equipment.ruined_shield.banner")
                     .formatted(Formatting.GRAY)
@@ -97,8 +103,22 @@ public class RuinedEquipmentItem extends Item {
 
     @Override
     public boolean hasGlint(ItemStack stack) {
+        return hasRuinedGlint(stack);
+    }
+
+    public static boolean hasRuinedGlint(ItemStack stack) {
         return stack != null && stack.getNbt() != null
                 && stack.getNbt().getString(RuinedEquipmentUtils.RUINED_ENCHTS_TAG) != null
                 && !stack.getNbt().getString(RuinedEquipmentUtils.RUINED_ENCHTS_TAG).isEmpty();
+    }
+
+    @Override
+    public Rarity getRarity(ItemStack stack) {
+        return getRuinedRarity(stack);
+    }
+
+
+    public static Rarity getRuinedRarity(ItemStack stack) {
+        return hasRuinedGlint(stack) ? Rarity.RARE : Rarity.COMMON;
     }
 }

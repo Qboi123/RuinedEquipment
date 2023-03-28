@@ -3,14 +3,13 @@ package pepjebs.ruined_equipment.item;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
+import net.minecraftforge.registries.ForgeRegistries;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+@SuppressWarnings("DataFlowIssue")
 public class RuinedEquipmentItems {
 
     public static Item[] SUPPORTED_VANILLA_ITEMS = {
@@ -81,9 +80,9 @@ public class RuinedEquipmentItems {
     public static Map<Item, Item> getVanillaItemMap() {
         Map<Item, Item> vanillaItemMap = new HashMap<>();
         for (Item i : RuinedEquipmentItems.SUPPORTED_VANILLA_ITEMS) {
-            vanillaItemMap.put(Registry.ITEM.get(
+            vanillaItemMap.put(ForgeRegistries.ITEMS.getValue(
                     new Identifier(RuinedEquipmentMod.MOD_ID,
-                            RuinedEquipmentMod.RUINED_PREFIX + Registry.ITEM.getId(i).getPath())), i);
+                            RuinedEquipmentMod.RUINED_PREFIX + ForgeRegistries.ITEMS.getKey(i).getPath())), i);
         }
         return vanillaItemMap;
     }
@@ -91,7 +90,7 @@ public class RuinedEquipmentItems {
     public static Map<Item, Item> getVanillaDyeableItemMap() {
         Map<Item, Item> vanillaDyeableMap = new HashMap<>();
         for (Map.Entry<Item, Item> i : RuinedEquipmentItems.getVanillaItemMap().entrySet()) {
-            if (Registry.ITEM.getId(i.getValue()).getPath().contains("leather")) {
+            if (ForgeRegistries.ITEMS.getKey(i.getValue()).getPath().contains("leather")) {
                 vanillaDyeableMap.put(i.getKey(), i.getValue());
             }
         }

@@ -12,8 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import pepjebs.ruined_equipment.RuinedEquipmentMod;
-import pepjebs.ruined_equipment.item.RuinedEquipmentItem;
-import pepjebs.ruined_equipment.item.RuinedEquipmentItems;
 import pepjebs.ruined_equipment.utils.RuinedEquipmentUtils;
 
 @Mixin(ExperienceOrbEntity.class)
@@ -25,27 +23,24 @@ public abstract class ExperienceOrbEntityMixin {
     @Inject(method = "onPlayerCollision", at = @At("INVOKE"))
     private void doRuinedRepairOnPlayerCollision(PlayerEntity player, CallbackInfo ci) {
         if (!player.world.isClient) {
-            if (RuinedEquipmentMod.CONFIG != null &&
-                    !RuinedEquipmentMod.CONFIG.enableRuinedMendingRepair) return;
-            if (player.experiencePickUpDelay == 0) {
-                doPlayerHandRuinedMendingRepair(player, Hand.MAIN_HAND);
-                doPlayerHandRuinedMendingRepair(player, Hand.OFF_HAND);
-            }
-
+            if (RuinedEquipmentMod.CONFIG != null && !RuinedEquipmentMod.CONFIG.enableRuinedMendingRepair)
+                return;
+            doPlayerHandRuinedMendingRepair(player, Hand.MAIN_HAND);
+            doPlayerHandRuinedMendingRepair(player, Hand.OFF_HAND);
         }
     }
 
     private void doPlayerHandRuinedMendingRepair(PlayerEntity player, Hand hand) {
         ItemStack handStack = player.getStackInHand(hand);
-        if (handStack.getItem() instanceof RuinedEquipmentItem
+        if (RuinedEquipmentUtils.isRuinedItem(handStack.getItem())
                 && RuinedEquipmentUtils.ruinedItemHasEnchantment(handStack, Enchantments.MENDING)) {
             player.experiencePickUpDelay = 2;
             player.sendPickup((ExperienceOrbEntity)(Object)this, 1);
             if (this.amount > 0) {
-                Item vanillaItem = RuinedEquipmentItems.getVanillaItemMap().get(handStack.getItem());
+                Item vanillaItem = RuinedEquipmentUtils.getRepairItemForItemStack(handStack);
                 int repairAmount = getMendingRepairAmount(this.amount);
                 ItemStack repaired = RuinedEquipmentUtils.generateRepairedItemForAnvilByDamage(
-                        handStack, vanillaItem.getMaxDamage() - repairAmount);
+                        handStack, vanillaItem.getMaxDamage(handStack) - repairAmount);
                 if (RuinedEquipmentMod.CONFIG != null && RuinedEquipmentMod.CONFIG.enableSetRuinedItemInHand) {
                     if (hand == Hand.MAIN_HAND) {
                         player.getInventory().main.set(player.getInventory().selectedSlot, repaired);
