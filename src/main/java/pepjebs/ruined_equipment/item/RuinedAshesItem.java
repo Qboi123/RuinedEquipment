@@ -3,8 +3,9 @@ package pepjebs.ruined_equipment.item;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
@@ -27,10 +28,12 @@ public class RuinedAshesItem extends Item {
         if (id == null) return;
         Item item = ForgeRegistries.ITEMS.getValue(id);
         if (stack.hasCustomName()) {
-            tooltip.add(new TranslatableText(this.getTranslationKey()).formatted(Formatting.GRAY));
+            tooltip.add(MutableText.of(
+                    new TranslatableTextContent(this.getTranslationKey())).formatted(Formatting.GRAY));
         }
         assert item != null;
-        tooltip.add(new TranslatableText(item.getTranslationKey(stack)).formatted(Formatting.GRAY));
+        tooltip.add(MutableText.of(
+                new TranslatableTextContent(item.getTranslationKey(stack))).formatted(Formatting.GRAY));
         RuinedEquipmentItem.appendRuinedTooltip(stack, tooltip);
     }
 

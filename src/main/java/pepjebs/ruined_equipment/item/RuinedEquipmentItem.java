@@ -4,10 +4,10 @@ import net.minecraft.client.item.TooltipContext;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
@@ -48,28 +48,23 @@ public class RuinedEquipmentItem extends Item {
         String tagString = stack.getNbt().getString(RuinedEquipmentUtils.RUINED_ENCHTS_TAG);
         Map<Enchantment, Integer> enchantMap = RuinedEquipmentUtils.processEncodedEnchantments(tagString);
         if (enchantMap != null) {
-            MutableText newT0 = tooltip.get(0).shallowCopy();
             if (stack.hasGlint()) {
-                newT0 = new LiteralText(newT0.getString()).formatted(Formatting.AQUA);
-                if (stack.hasCustomName()) {
-                    newT0 = newT0.formatted(Formatting.ITALIC);
-                }
-                tooltip.set(0, newT0);
+                tooltip.set(0, tooltip.get(0).copy().formatted(Formatting.AQUA));
             }
 
             for (Map.Entry<Enchantment, Integer> enchant : enchantMap.entrySet()) {
-                tooltip.add(new LiteralText(
-                        enchant.getKey().getName(enchant.getValue()).getString()).formatted(Formatting.GRAY));
+                tooltip.add(MutableText.of(new LiteralTextContent(
+                        enchant.getKey().getName(enchant.getValue()).getString())).formatted(Formatting.GRAY));
             }
         }
         if (stack.getNbt() != null && stack.getNbt().contains(RuinedEquipmentSmithingEmpowerRecipe.RUINED_MAX_ENCHT_TAG)
                 && stack.getNbt().getBoolean(RuinedEquipmentSmithingEmpowerRecipe.RUINED_MAX_ENCHT_TAG)) {
-            tooltip.add(new TranslatableText("item.ruined_equipment.ruined_upgrading")
+            tooltip.add(MutableText.of(new TranslatableTextContent("item.ruined_equipment.ruined_upgrading"))
                     .formatted(Formatting.GRAY));
         }
         if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new Identifier(RuinedEquipmentMod.MOD_ID, "ruined_shield"))
                 && stack.getNbt().contains("BlockEntityTag")) {
-            tooltip.add(new TranslatableText("item.ruined_equipment.ruined_shield.banner")
+            tooltip.add(MutableText.of(new TranslatableTextContent("item.ruined_equipment.ruined_shield.banner"))
                     .formatted(Formatting.GRAY)
                     .formatted(Formatting.ITALIC));
         }
@@ -79,10 +74,10 @@ public class RuinedEquipmentItem extends Item {
     @OnlyIn(Dist.CLIENT)
     public Text getName() {
         // Get existing text
-        MutableText supered = super.getName().shallowCopy();
+        MutableText supered = super.getName().copyContentOnly();
         // Append vanilla item's name
         Item vanillaItem = RuinedEquipmentItems.getVanillaItemMap().get(this);
-        supered = supered.append(new TranslatableText(vanillaItem.getTranslationKey()));
+        supered = supered.append(MutableText.of(new TranslatableTextContent(vanillaItem.getTranslationKey())));
         return supered;
     }
 
@@ -90,10 +85,10 @@ public class RuinedEquipmentItem extends Item {
     @OnlyIn(Dist.CLIENT)
     public Text getName(ItemStack stack) {
         // Get existing text
-        MutableText supered = super.getName().shallowCopy();
+        MutableText supered = super.getName().copyContentOnly();
         // Append vanilla item's name
         Item vanillaItem = RuinedEquipmentItems.getVanillaItemMap().get(this);
-        supered = supered.append(new TranslatableText(vanillaItem.getTranslationKey()));
+        supered = supered.append(MutableText.of(new TranslatableTextContent(vanillaItem.getTranslationKey())));
         // Add the Aqua text if it has a glint
         if (hasGlint(stack)) {
             supered = supered.formatted(Formatting.AQUA);

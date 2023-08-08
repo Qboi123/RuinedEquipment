@@ -5,7 +5,8 @@ import net.minecraft.item.*;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.screen.*;
 import net.minecraft.tag.ItemTags;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.LiteralTextContent;
+import net.minecraft.text.MutableText;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.StringUtils;
@@ -93,7 +94,7 @@ public abstract class AnvilScreenHandlerMixin extends ForgingScreenHandler {
                     if (StringUtils.isBlank(this.newItemName)) {
                         repaired.removeCustomName();
                     } else {
-                        repaired.setCustomName(new LiteralText(this.newItemName));
+                        repaired.setCustomName(MutableText.of(new LiteralTextContent(this.newItemName)));
                         levelCost++;
                     }
                 }
